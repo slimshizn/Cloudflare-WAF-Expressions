@@ -12,16 +12,22 @@ If you find this repository useful, I would greatly appreciate it if you could g
 <img src="data/images/waf-custom-rules.png" alt="Cloudflare Web Application Firewall [WAF] Rules"> 
 
 
-## 🐈 SniffCat integration
-The script supports [SniffCat](https://sniffcat.com) - a service that provides a dynamic list of known malicious IP addresses.
-When `SNIFFCAT_API_TOKEN` is set, the script fetches IPs from the SniffCat API on every sync and merges them with the static `rules/ip-blocklist.txt` before uploading to Cloudflare Lists.
-This significantly extends the IP blocklist without any manual effort.
+## 🛑 SniffCat and AbuseIPDB integrations
+The script supports two external services that provide dynamic lists of known malicious IP addresses: [SniffCat](https://sniffcat.com) and [AbuseIPDB](https://www.abuseipdb.com).
+When you set `SNIFFCAT_API_TOKEN` and/or `ABUSEIPDB_API_KEY`, the script fetches IP addresses from the APIs on every sync and merges them with the static `rules/ip-blocklist.txt` before uploading to Cloudflare Lists.
+This significantly extends the IP blocklist without any manual effort. Both integrations work independently of each other - you can enable one, both, or neither.
 
-The integration can be controlled via two optional environment variables:
-- `SNIFFCAT_CONFIDENCE_MIN` - minimum confidence level (0-100) required to include an IP. Default: `78`.
-- `SNIFFCAT_LIMIT` - maximum number of IPs fetched per sync. Default: `3000`. Cloudflare allows up to 10,000 entries per list.
+Cloudflare allows up to 10,000 entries per list. Each integration can be configured via two optional environment variables:
 
-Without `SNIFFCAT_API_TOKEN`, the integration is skipped and only the static blocklist is used.
+**SniffCat:**
+- `SNIFFCAT_CONFIDENCE_MIN` - minimum confidence level (0-100) required to include an IP address. Default: `80`.
+- `SNIFFCAT_LIMIT` - maximum number of IP addresses fetched per sync. Default: `3000`.
+
+**AbuseIPDB:**
+- `ABUSEIPDB_CONFIDENCE_MIN` - minimum confidence score (0-100) required to include an IP address. Default: `75`.
+- `ABUSEIPDB_LIMIT` - maximum number of IP addresses fetched per sync. Default: `3000`. Cloudflare allows up to 10,000 entries per list.
+
+Without `SNIFFCAT_API_TOKEN` and `ABUSEIPDB_API_KEY`, both integrations are skipped and only the [static list](rules/ip-blocklist.txt) is used.
 
 
 ## 🛡️ What Can This List Block?
@@ -31,7 +37,7 @@ Without `SNIFFCAT_API_TOKEN`, the integration is skipped and only the static blo
 | [🧨 Part 2 - Malicious extensions & injections](https://github.com/sefinek/Cloudflare-WAF-Expressions/blob/main/rules/expressions.md#part2) | Blocks suspicious requests, exploits, path traversal, configuration file access attempts, and the use of CLI tools in URLs. | Block             |
 | [🤖 Part 3 - Unwanted bots](https://github.com/sefinek/Cloudflare-WAF-Expressions/blob/main/rules/expressions.md#part3)                     | Blocks unnecessary, harmful bots, scanners, and web scrapers.                                                               | Block             |
 | [🦕 Part 4 - Ancient browsers & IP blocklist](https://github.com/sefinek/Cloudflare-WAF-Expressions/blob/main/rules/expressions.md#part4)   | Blocks traffic from the Tor network, known malicious IP addresses, ASNs linked to botnets, and very outdated browsers.      | Block             |
-| [🗑️ Part 5 - Deprecated browsers & CMS](https://github.com/sefinek/Cloudflare-WAF-Expressions/blob/main/rules/expressions.md#part5)        | Enforces additional verification for outdated browsers (Chrome 73-122, Firefox 62-118), old OS versions, and CMS scanners.  | Managed Challenge |
+| [🗑️ Part 5 - Deprecated browsers & CMS](https://github.com/sefinek/Cloudflare-WAF-Expressions/blob/main/rules/expressions.md#part5)         | Enforces additional verification for outdated browsers (Chrome 73-122, Firefox 62-118), old OS versions, and CMS scanners.  | Managed Challenge |
 
 > [!IMPORTANT]  
 > It is recommended to **disable** `Bot Fight Mode` in the `Security` tab.  
@@ -74,7 +80,7 @@ There's no need to add them manually, as the script takes care of everything for
      ![Required API token permissions](data/images/api-token-permissions.png)
 
 > [!NOTE]
-> Rules are deployed as WAF custom rules via the Rulesets API. The legacy Firewall Rules API was deprecated on 2025-06-15 and no longer accepts modifications. An old token may stop working if you use [User API Tokens](https://developers.cloudflare.com/fundamentals/api/get-started/create-token). Migrating to [Account API tokens](https://developers.cloudflare.com/fundamentals/api/get-started/account-owned-tokens) is highly recommended.
+> Rules are deployed as WAF custom rules via the Rulesets API. The legacy Firewall Rules API was deprecated on 15.06.2025 and no longer accepts modifications. An old token may stop working if you use [User API Tokens](https://developers.cloudflare.com/fundamentals/api/get-started/create-token). Migrating to [Account API tokens](https://developers.cloudflare.com/fundamentals/api/get-started/account-owned-tokens) is highly recommended.
 
    - Set `CF_ACCOUNT_ID` to your Cloudflare Account ID (32 characters, found in the URL: `dash.cloudflare.com/<account_id>/configurations/lists`) - required for IP list synchronization
    - Set `CF_IP_BLOCKLIST_NAME` to a custom name for the managed IP list, or leave the default (`sefinek_cf_waf`)
@@ -82,6 +88,7 @@ There's no need to add them manually, as the script takes care of everything for
    - Set `PHP_SUPPORT` to `true` if your website uses PHP (removes the Managed Challenge rule for `.php` files)
    - Set `WORDPRESS_SUPPORT` to `true` if your website runs WordPress (removes the Managed Challenge rules for `/wp-content` and `/wp-includes` paths so themes, plugins, CSS and images load correctly; also set `PHP_SUPPORT=true`)
    - Set `SNIFFCAT_API_TOKEN` to include dynamic malicious IPs from [SniffCat](https://sniffcat.com) (optional, but highly recommended)
+   - Set `ABUSEIPDB_API_KEY` to include dynamic malicious IPs from [AbuseIPDB](https://www.abuseipdb.com) (optional, but highly recommended)
    ```bash
    nano .env
    ```
@@ -136,4 +143,3 @@ Your contribution will be appreciated and will help keep this list up-to-date an
 
 ## 🔖 GNU GPL v3 License
 Copyright © 2023-2026 [Sefinek](https://sefinek.net)
-
